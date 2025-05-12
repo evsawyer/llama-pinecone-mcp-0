@@ -48,10 +48,10 @@ def parse_document(url: list[str], metadata: Schema) -> str:
         document.metadata = metadata.model_dump()
     return documents
 
-@mcp.tool()
-def parse_documents(urls: list[str]) -> str:
-    """Parse a list of URLs and return the parsed result."""
-    return parser.load_data(urls)
+# @mcp.tool()
+# def parse_documents(urls: list[str]) -> str:
+#     """Parse a list of URLs and return the parsed result."""
+#     return parser.load_data(urls)
 
 @mcp.tool()
 def upsert_documents(url: list[str], metadata: Schema) -> str:
@@ -64,9 +64,16 @@ def upsert_documents(url: list[str], metadata: Schema) -> str:
     return "Documents upserted successfully"
 
 @mcp.tool()
-def query_pinecone(query: str) -> str:
+def query(query: str) -> str:
     """Query the Pinecone index and return the results."""
     vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
     index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
     query_engine = index.as_query_engine()
     return query_engine.query(query)
+
+@mcp.tool()
+def retrieve(query: str) -> str:
+    vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
+    index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
+    retriever = index.as_retriever()
+    return retriever.retrive(query)
