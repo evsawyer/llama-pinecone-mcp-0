@@ -142,19 +142,20 @@ def upsert_documents(url: list[str], metadata: Schema) -> str:
     return "Documents upserted successfully"
 
 @mcp.tool()
-def query(query: str) -> str:
+def query(query: str, filters_config: FiltersConfig) -> str:
     """Query the Pinecone index and return the results."""
+    filters = create_metadata_filters(filters_config)
     vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
     index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
-    query_engine = index.as_query_engine()
+    query_engine = index.as_query_engine(filters=filters)
     return query_engine.query(query)
 
 @mcp.tool()
-def retrieve(query: str, filters_config: FiltersConfig) -> str:
+def retrieve(query: str, filters_config: FiltersConfig, top_k: int) -> str:
     vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
     index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
     filters = create_metadata_filters(filters_config)
-    retriever = index.as_retriever(filters=filters)
+    retriever = index.as_retriever(filters=filters, similarity_top_k=top_k)
     retrieved = retriever.retrieve(query)
     results = {}
     for i, vector in enumerate(retrieved):
