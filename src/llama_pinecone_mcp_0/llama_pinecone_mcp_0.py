@@ -41,10 +41,6 @@ class Schema(BaseModel):
         extra = "allow"
 
 @mcp.tool()
-def 
-
-
-@mcp.tool()
 def parse_document(url: list[str], metadata: Schema) -> str:
     """Parse a list of URLs and return the parsed result."""
     documents = parser.load_data(url)
