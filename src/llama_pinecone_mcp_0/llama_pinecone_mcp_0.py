@@ -25,9 +25,9 @@ parser = LlamaParse(
     verbose=True,
 )
 
-vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
-index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
-query_engine = index.as_query_engine()
+# vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
+# index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
+# query_engine = index.as_query_engine()
 
 @mcp.tool()
 def parse_documents(urls: list[str]) -> str:
@@ -38,7 +38,7 @@ def parse_documents(urls: list[str]) -> str:
 def upsert_documents(urls: list[str]) -> str:
     """Upsert a list of documents into the Pinecone index."""
     documents = parse_documents(urls)
-    vector_store = vector_store
+    vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
     VectorStoreIndex.from_documents(
         documents, storage_context=storage_context)
@@ -47,4 +47,7 @@ def upsert_documents(urls: list[str]) -> str:
 @mcp.tool()
 def query_pinecone(query: str) -> str:
     """Query the Pinecone index and return the results."""
+    vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
+    index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
+    query_engine = index.as_query_engine()
     return query_engine.query(query)
