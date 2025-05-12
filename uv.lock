@@ -675,6 +675,19 @@ wheels = [
 ]
 
 [[package]]
+name = "llama-index-vector-stores-pinecone"
+version = "0.4.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "llama-index-core" },
+    { name = "pinecone" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/90/51/d46e4936a64308b9013a262199276c000f74586e466537ca763d2b3231ed/llama_index_vector_stores_pinecone-0.4.5.tar.gz", hash = "sha256:0a619d0975ce735ecdcf8f81ae087971022fb4921ed9d53e39540bbd00df9292", size = 7523 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/34/5c/6ade3d005803fc2f04f923b9a6b5f8278df104fc631904f5b43ba49b061b/llama_index_vector_stores_pinecone-0.4.5-py3-none-any.whl", hash = "sha256:578f612da39f5480b0aeea98e14dcde436739f6a6a2c821ee933b22cbfdd8421", size = 8610 },
+]
+
+[[package]]
 name = "llama-parse"
 version = "0.6.12"
 source = { registry = "https://pypi.org/simple" }
@@ -693,6 +706,8 @@ source = { editable = "." }
 dependencies = [
     { name = "fastmcp" },
     { name = "llama-index" },
+    { name = "llama-index-vector-stores-pinecone" },
+    { name = "llama-parse" },
     { name = "openai" },
     { name = "pinecone" },
     { name = "pydantic" },
@@ -702,6 +717,8 @@ dependencies = [
 requires-dist = [
     { name = "fastmcp", specifier = ">=2.3.1" },
     { name = "llama-index", specifier = ">=0.12.35" },
+    { name = "llama-index-vector-stores-pinecone", specifier = ">=0.4.5" },
+    { name = "llama-parse", specifier = ">=0.6.12" },
     { name = "openai", specifier = ">=1.78.0" },
     { name = "pinecone", specifier = ">=6.0.2" },
     { name = "pydantic", specifier = ">=2.11.4" },
