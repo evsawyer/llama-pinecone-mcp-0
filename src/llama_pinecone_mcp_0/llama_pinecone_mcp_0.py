@@ -16,6 +16,7 @@ from llama_index.core.vector_stores import (
     MetadataFilters,
     FilterOperator,
 )
+import json
 
 load_dotenv()
 
@@ -100,8 +101,15 @@ OPERATOR_MAPPING = {
 }
 
 @mcp.tool()
-def create_metadata_filters(filters_config: Union[FiltersConfig, List[Dict], List[FilterConfig]]) -> MetadataFilters:
+def create_metadata_filters(filters_config: Union[FiltersConfig, List[Dict], List[FilterConfig], str]) -> MetadataFilters:
     """Create a MetadataFilters object based on a filter configuration."""
+    
+    # Handle string input (JSON)
+    if isinstance(filters_config, str):
+        try:
+            filters_config = json.loads(filters_config)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON string: {e}")
     
     # Handle different input types
     if isinstance(filters_config, list):
@@ -113,6 +121,15 @@ def create_metadata_filters(filters_config: Union[FiltersConfig, List[Dict], Lis
             filter_configs = filters_config
         else:
             raise ValueError("List must contain either all dicts or all FilterConfig objects")
+    elif isinstance(filters_config, dict):
+        # Single dict - convert to FiltersConfig
+        if "filters" in filters_config:
+            # It's a dict representation of FiltersConfig
+            filters_config = FiltersConfig(**filters_config)
+            filter_configs = filters_config.filters
+        else:
+            # It's a single filter dict
+            filter_configs = [FilterConfig(**filters_config)]
     elif isinstance(filters_config, FiltersConfig):
         # Already a FiltersConfig object
         filter_configs = filters_config.filters
