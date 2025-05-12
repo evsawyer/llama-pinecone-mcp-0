@@ -9,6 +9,7 @@ from llama_index.vector_stores.pinecone import PineconeVectorStore
 from llama_index.core import StorageContext
 from llama_parse import LlamaParse
 from typing import List, Any, Dict, Union
+from enum import Enum
 from pydantic import BaseModel, Field
 from llama_index.core.vector_stores import (
     MetadataFilter,
@@ -46,15 +47,31 @@ class Schema(BaseModel):
     class Config:
         extra = "allow"
 
+# Create an enum for the allowed operator strings
+class Operator(str, Enum):
+    EQ = "=="           # equals
+    GT = ">"            # greater than
+    LT = "<"            # less than
+    NE = "!="           # not equal
+    GTE = ">="          # greater than or equal to
+    LTE = "<="          # less than or equal to
+    IN = "in"           # value in list
+    NIN = "nin"         # value not in list
+    ANY = "any"         # any value in list matches
+    ALL = "all"         # all values in list match
+    TEXT_MATCH = "text_match"              # text match
+    TEXT_MATCH_INSENSITIVE = "text_match_insensitive"  # text match (case insensitive) 
+    CONTAINS = "contains"  # contains substring
+    IS_EMPTY = "is_empty"  # field is empty
+
 # Pydantic model for a single filter
 class FilterConfig(BaseModel):
     key: str = Field(..., description="The metadata field name to filter on")
     value: Any = Field(..., description="The value to compare against")
-    operator: FilterOperator = Field(
-        default=FilterOperator.EQ,
+    operator: Operator = Field(
+        default="==",
         description="The operator to use for comparison"
     )
-
     model_config = {"arbitrary_types_allowed": True}
 
 # Pydantic model for all filters
@@ -64,6 +81,23 @@ class FiltersConfig(BaseModel):
         description="List of filter configurations"
     )
 
+# Mapping between our Operator enum and FilterOperator from the library
+OPERATOR_MAPPING = {
+    "==": FilterOperator.EQ,
+    ">": FilterOperator.GT,
+    "<": FilterOperator.LT,
+    "!=": FilterOperator.NE,
+    ">=": FilterOperator.GTE,
+    "<=": FilterOperator.LTE,
+    "in": FilterOperator.IN,
+    "nin": FilterOperator.NIN,
+    "any": FilterOperator.ANY,
+    "all": FilterOperator.ALL,
+    "text_match": FilterOperator.TEXT_MATCH,
+    "text_match_insensitive": FilterOperator.TEXT_MATCH_INSENSITIVE,
+    "contains": FilterOperator.CONTAINS,
+    "is_empty": FilterOperator.IS_EMPTY
+}
 
 @mcp.tool()
 def create_metadata_filters(filters_config: Union[FiltersConfig, List[Dict], List[FilterConfig]]) -> MetadataFilters:
@@ -87,7 +121,11 @@ def create_metadata_filters(filters_config: Union[FiltersConfig, List[Dict], Lis
     
     # Create the MetadataFilter objects
     filters = [
-        MetadataFilter(key=config.key, value=config.value, operator=config.operator)
+        MetadataFilter(
+            key=config.key, 
+            value=config.value, 
+            operator=OPERATOR_MAPPING[config.operator.value] if isinstance(config.operator, Operator) else OPERATOR_MAPPING[config.operator]
+        )
         for config in filter_configs
     ]
     
