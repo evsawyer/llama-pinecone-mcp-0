@@ -35,8 +35,9 @@ def parse_documents(urls: list[str]) -> str:
     return parser.load_data(urls)
 
 @mcp.tool()
-def upsert_documents(documents: list) -> str:
+def upsert_documents(urls: list[str]) -> str:
     """Upsert a list of documents into the Pinecone index."""
+    documents = parse_documents(urls)
     vector_store = vector_store
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
     VectorStoreIndex.from_documents(
