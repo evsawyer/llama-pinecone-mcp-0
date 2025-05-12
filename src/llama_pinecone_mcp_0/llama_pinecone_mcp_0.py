@@ -76,4 +76,4 @@ def retrieve(query: str) -> str:
     vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
     index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
     retriever = index.as_retriever()
-    return retriever.retrive(query)
+    return retriever.retrieve(query)
