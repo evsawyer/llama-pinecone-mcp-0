@@ -8,7 +8,13 @@ from llama_index.core import VectorStoreIndex
 from llama_index.vector_stores.pinecone import PineconeVectorStore
 from llama_index.core import StorageContext
 from llama_parse import LlamaParse
+from typing import List, Any, Dict, Union
 from pydantic import BaseModel, Field
+from llama_index.core.vector_stores import (
+    MetadataFilter,
+    MetadataFilters,
+    FilterOperator,
+)
 
 load_dotenv()
 
@@ -39,6 +45,53 @@ class Schema(BaseModel):
             
     class Config:
         extra = "allow"
+
+# Pydantic model for a single filter
+class FilterConfig(BaseModel):
+    key: str = Field(..., description="The metadata field name to filter on")
+    value: Any = Field(..., description="The value to compare against")
+    operator: FilterOperator = Field(
+        default=FilterOperator.EQ,
+        description="The operator to use for comparison"
+    )
+
+    model_config = {"arbitrary_types_allowed": True}
+
+# Pydantic model for all filters
+class FiltersConfig(BaseModel):
+    filters: List[FilterConfig] = Field(
+        default_factory=list,
+        description="List of filter configurations"
+    )
+
+
+@mcp.tool()
+def create_metadata_filters(filters_config: Union[FiltersConfig, List[Dict], List[FilterConfig]]) -> MetadataFilters:
+    """Create a MetadataFilters object based on a filter configuration."""
+    
+    # Handle different input types
+    if isinstance(filters_config, list):
+        if all(isinstance(f, dict) for f in filters_config):
+            # List of dictionaries - convert to FilterConfig objects
+            filter_configs = [FilterConfig(**f) for f in filters_config]
+        elif all(isinstance(f, FilterConfig) for f in filters_config):
+            # Already a list of FilterConfig objects
+            filter_configs = filters_config
+        else:
+            raise ValueError("List must contain either all dicts or all FilterConfig objects")
+    elif isinstance(filters_config, FiltersConfig):
+        # Already a FiltersConfig object
+        filter_configs = filters_config.filters
+    else:
+        raise ValueError(f"Unsupported type: {type(filters_config)}")
+    
+    # Create the MetadataFilter objects
+    filters = [
+        MetadataFilter(key=config.key, value=config.value, operator=config.operator)
+        for config in filter_configs
+    ]
+    
+    return MetadataFilters(filters=filters)
 
 @mcp.tool()
 def parse_document(url: list[str], metadata: Schema) -> str:
