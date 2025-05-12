@@ -45,7 +45,7 @@ def parse_document(url: list[str], metadata: Schema) -> str:
     """Parse a list of URLs and return the parsed result."""
     documents = parser.load_data(url)
     for document in documents:
-        document.metadata = metadata
+        document.metadata = metadata.model_dump()
     return documents
 
 @mcp.tool()
