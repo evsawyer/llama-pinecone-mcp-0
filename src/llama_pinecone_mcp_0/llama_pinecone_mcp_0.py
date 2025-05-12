@@ -104,44 +104,15 @@ OPERATOR_MAPPING = {
 def create_metadata_filters(filters_config: FiltersConfig) -> MetadataFilters:
     """Create a MetadataFilters object based on a filter configuration."""
     
-    # Handle string input (JSON)
-    if isinstance(filters_config, str):
-        try:
-            filters_config = json.loads(filters_config)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON string: {e}")
-    
-    # Handle different input types
-    if isinstance(filters_config, list):
-        if all(isinstance(f, dict) for f in filters_config):
-            # List of dictionaries - convert to FilterConfig objects
-            filter_configs = [FilterConfig(**f) for f in filters_config]
-        elif all(isinstance(f, FilterConfig) for f in filters_config):
-            # Already a list of FilterConfig objects
-            filter_configs = filters_config
-        else:
-            raise ValueError("List must contain either all dicts or all FilterConfig objects")
-    elif isinstance(filters_config, dict):
-        # Single dict - convert to FiltersConfig
-        if "filters" in filters_config:
-            # It's a dict representation of FiltersConfig
-            filters_config = FiltersConfig(**filters_config)
-            filter_configs = filters_config.filters
-        else:
-            # It's a single filter dict
-            filter_configs = [FilterConfig(**filters_config)]
-    elif isinstance(filters_config, FiltersConfig):
-        # Already a FiltersConfig object
-        filter_configs = filters_config.filters
-    else:
-        raise ValueError(f"Unsupported type: {type(filters_config)}")
+    # Get the filter configs from the FiltersConfig object
+    filter_configs = filters_config.filters
     
     # Create the MetadataFilter objects
     filters = [
         MetadataFilter(
             key=config.key, 
             value=config.value, 
-            operator=OPERATOR_MAPPING[config.operator.value] if isinstance(config.operator, Operator) else OPERATOR_MAPPING[config.operator]
+            operator=OPERATOR_MAPPING[config.operator.value]
         )
         for config in filter_configs
     ]
@@ -185,3 +156,22 @@ def retrieve(query: str) -> str:
     index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
     retriever = index.as_retriever()
     return retriever.retrieve(query)
+
+@mcp.tool()
+def parse_filters_json(filters_json: str) -> FiltersConfig:
+    """Parse a JSON string into a FiltersConfig object.
+    
+    Example input: 
+    {
+        "filters": [
+            {"key": "user_id", "value": "evan@ivc.media", "operator": "=="}
+        ]
+    }
+    """
+    try:
+        data = json.loads(filters_json)
+        return FiltersConfig(**data)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON string: {e}")
+    except Exception as e:
+        raise ValueError(f"Error parsing JSON into FiltersConfig: {e}")
