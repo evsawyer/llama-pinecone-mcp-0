@@ -101,7 +101,7 @@ OPERATOR_MAPPING = {
 }
 
 @mcp.tool()
-def create_metadata_filters(filters_config: Union[FiltersConfig, List[Dict], List[FilterConfig], str]) -> MetadataFilters:
+def create_metadata_filters(filters_config: FiltersConfig) -> MetadataFilters:
     """Create a MetadataFilters object based on a filter configuration."""
     
     # Handle string input (JSON)
