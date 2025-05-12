@@ -155,7 +155,16 @@ def retrieve(query: str, filters_config: FiltersConfig) -> str:
     index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
     filters = create_metadata_filters(filters_config)
     retriever = index.as_retriever(filters=filters)
-    return retriever.retrieve(query)
+    retrieved = retriever.retrieve(query)
+    results = []
+    for vector in retrieved:
+        metadata = vector.metadata
+        text = vector.text
+        results.append({
+            "metadata": metadata,
+            "text": text
+        })
+    return results
 
 @mcp.tool()
 def parse_filters_json(filters_json: str) -> FiltersConfig:
