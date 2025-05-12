@@ -116,7 +116,6 @@ def create_metadata_filters(filters_config: FiltersConfig) -> MetadataFilters:
         )
         for config in filter_configs
     ]
-    
     return MetadataFilters(filters=filters)
 
 @mcp.tool()
@@ -151,10 +150,11 @@ def query(query: str) -> str:
     return query_engine.query(query)
 
 @mcp.tool()
-def retrieve(query: str) -> str:
+def retrieve(query: str, filters_config: FiltersConfig) -> str:
     vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
     index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
-    retriever = index.as_retriever()
+    filters = create_metadata_filters(filters_config)
+    retriever = index.as_retriever(filters=filters)
     return retriever.retrieve(query)
 
 @mcp.tool()
