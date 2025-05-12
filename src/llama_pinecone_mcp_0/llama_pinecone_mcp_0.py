@@ -156,31 +156,13 @@ def retrieve(query: str, filters_config: FiltersConfig) -> str:
     filters = create_metadata_filters(filters_config)
     retriever = index.as_retriever(filters=filters)
     retrieved = retriever.retrieve(query)
-    results = []
-    for vector in retrieved:
+    results = {}
+    for i, vector in enumerate(retrieved):
         metadata = vector.metadata
         text = vector.text
-        results.append({
+        results[f"result {i+1}"] = {
             "metadata": metadata,
             "text": text
-        })
+        }
     return results
 
-@mcp.tool()
-def parse_filters_json(filters_json: str) -> FiltersConfig:
-    """Parse a JSON string into a FiltersConfig object.
-    
-    Example input: 
-    {
-        "filters": [
-            {"key": "user_id", "value": "evan@ivc.media", "operator": "=="}
-        ]
-    }
-    """
-    try:
-        data = json.loads(filters_json)
-        return FiltersConfig(**data)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Invalid JSON string: {e}")
-    except Exception as e:
-        raise ValueError(f"Error parsing JSON into FiltersConfig: {e}")
