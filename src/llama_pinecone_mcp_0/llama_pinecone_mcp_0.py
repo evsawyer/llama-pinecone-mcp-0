@@ -8,7 +8,7 @@ from llama_index.core import VectorStoreIndex
 from llama_index.vector_stores.pinecone import PineconeVectorStore
 from llama_index.core import StorageContext
 from llama_parse import LlamaParse
-from typing import List, Any, Dict, Union
+from typing import List, Any
 from enum import Enum
 from pydantic import BaseModel, Field
 from llama_index.core.vector_stores import (
@@ -16,8 +16,6 @@ from llama_index.core.vector_stores import (
     MetadataFilters,
     FilterOperator,
 )
-import json
-
 load_dotenv()
 
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
@@ -34,19 +32,15 @@ parser = LlamaParse(
     verbose=True,
 )
 
-# vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
-# index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
-# query_engine = index.as_query_engine()
- # validate Metadata
 class Schema(BaseModel):
     source: str = Field(description = 'where this document came from')
     user_id: str = Field(description = 'ivc email of uploader')
     client: str = Field(description = 'client this document is for')
     title: str = Field(description = 'the title of the document')
     tag: list = Field(description = 'list of tags of the document e.g. ["cannabis"]')
-            
     class Config:
         extra = "allow"
+
 
 # Create an enum for the allowed operator strings
 class Operator(str, Enum):
@@ -82,24 +76,6 @@ class FiltersConfig(BaseModel):
         description="List of filter configurations"
     )
 
-# Mapping between our Operator enum and FilterOperator from the library
-OPERATOR_MAPPING = {
-    "==": FilterOperator.EQ,
-    ">": FilterOperator.GT,
-    "<": FilterOperator.LT,
-    "!=": FilterOperator.NE,
-    ">=": FilterOperator.GTE,
-    "<=": FilterOperator.LTE,
-    "in": FilterOperator.IN,
-    "nin": FilterOperator.NIN,
-    "any": FilterOperator.ANY,
-    "all": FilterOperator.ALL,
-    "text_match": FilterOperator.TEXT_MATCH,
-    "text_match_insensitive": FilterOperator.TEXT_MATCH_INSENSITIVE,
-    "contains": FilterOperator.CONTAINS,
-    "is_empty": FilterOperator.IS_EMPTY
-}
-
 @mcp.tool()
 def create_metadata_filters(filters_config: FiltersConfig) -> MetadataFilters:
     """Create a MetadataFilters object based on a filter configuration."""
@@ -112,14 +88,14 @@ def create_metadata_filters(filters_config: FiltersConfig) -> MetadataFilters:
         MetadataFilter(
             key=config.key, 
             value=config.value, 
-            operator=OPERATOR_MAPPING[config.operator.value]
+            operator=config.operator.value
         )
         for config in filter_configs
     ]
     return MetadataFilters(filters=filters)
 
 @mcp.tool()
-def parse_document(url: list[str], metadata: Schema) -> str:
+def parse_document(url: str, metadata: Schema) -> str:
     """Parse a list of URLs and return the parsed result."""
     documents = parser.load_data(url)
     for document in documents:
@@ -132,13 +108,12 @@ def parse_document(url: list[str], metadata: Schema) -> str:
 #     return parser.load_data(urls)
 
 @mcp.tool()
-def upsert_documents(url: list[str], metadata: Schema) -> str:
+def upsert_document(url: str, metadata: Schema) -> str:
     """Upsert a document into the Pinecone index."""
-    documents = parse_document(url, metadata)
+    documents = parse_document(list(url), metadata)
     vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
-    VectorStoreIndex.from_documents(
-        documents, storage_context=storage_context)
+    VectorStoreIndex.from_documents(documents, storage_context=storage_context)
     return "Documents upserted successfully"
 
 @mcp.tool()
@@ -159,9 +134,11 @@ def retrieve(query: str, filters_config: FiltersConfig, top_k: int) -> str:
     retrieved = retriever.retrieve(query)
     results = {}
     for i, vector in enumerate(retrieved):
+        id = vector.id
         metadata = vector.metadata
         text = vector.text
         results[f"result {i+1}"] = {
+            "id": id,
             "metadata": metadata,
             "text": text
         }
