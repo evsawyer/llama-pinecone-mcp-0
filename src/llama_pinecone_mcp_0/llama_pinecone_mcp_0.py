@@ -134,7 +134,7 @@ def retrieve(query: str, filters_config: FiltersConfig, top_k: int) -> str:
     retrieved = retriever.retrieve(query)
     results = {}
     for i, vector in enumerate(retrieved):
-        id = vector.id
+        # id = vector.id
         metadata = vector.metadata
         text = vector.text
         results[f"result {i+1}"] = {
@@ -142,5 +142,5 @@ def retrieve(query: str, filters_config: FiltersConfig, top_k: int) -> str:
             "metadata": metadata,
             "text": text
         }
-    return results
+    return retrieved
 
