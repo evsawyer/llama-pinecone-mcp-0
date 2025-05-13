@@ -8,7 +8,8 @@ from llama_index.core import VectorStoreIndex
 from llama_index.vector_stores.pinecone import PineconeVectorStore
 from llama_index.core import StorageContext
 from llama_parse import LlamaParse
-from typing import List, Any
+from typing import List, Any, Optional
+import uuid
 from enum import Enum
 from pydantic import BaseModel, Field
 from llama_index.core.vector_stores import (
@@ -95,11 +96,13 @@ def create_metadata_filters(filters_config: FiltersConfig) -> MetadataFilters:
     return MetadataFilters(filters=filters)
 
 @mcp.tool()
-def parse_document(url: str, metadata: Schema) -> str:
+def parse_document(url: str, metadata: Schema, id: Optional[str] = None) -> str:
     """Parse a list of URLs and return the parsed result."""
     documents = parser.load_data(url)
+    doc_id = id if id is not None else str(uuid.uuid4())
     for document in documents:
         document.metadata = metadata.model_dump()
+        document.id_ = doc_id
     return documents
 
 # @mcp.tool()
@@ -108,9 +111,9 @@ def parse_document(url: str, metadata: Schema) -> str:
 #     return parser.load_data(urls)
 
 @mcp.tool()
-def upsert_document(url: str, metadata: Schema) -> str:
+def upsert_document(url: str, metadata: Schema, id: Optional[str] = None) -> str:
     """Upsert a document into the Pinecone index."""
-    documents = parse_document(list(url), metadata)
+    documents = parse_document(url, metadata, id)
     vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
     VectorStoreIndex.from_documents(documents, storage_context=storage_context)
@@ -134,13 +137,15 @@ def retrieve(query: str, filters_config: FiltersConfig, top_k: int) -> str:
     retrieved = retriever.retrieve(query)
     results = {}
     for i, vector in enumerate(retrieved):
-        # id = vector.id
+        id = vector.id_
+        score = vector.score
         metadata = vector.metadata
         text = vector.text
         results[f"result {i+1}"] = {
             "id": id,
+            "score": score,
             "metadata": metadata,
             "text": text
         }
-    return retrieved
+    return results
 
