@@ -853,6 +853,7 @@ name = "llama-pinecone-mcp-0"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "certifi" },
     { name = "fastmcp" },
     { name = "llama-index" },
     { name = "llama-index-cloud-sql-pg" },
@@ -865,6 +866,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "certifi", specifier = ">=2025.4.26" },
     { name = "fastmcp", specifier = ">=2.3.1" },
     { name = "llama-index", specifier = ">=0.12.35" },
     { name = "llama-index-cloud-sql-pg", specifier = ">=0.2.2" },

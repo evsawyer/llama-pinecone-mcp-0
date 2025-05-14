@@ -2,6 +2,9 @@ from fastmcp import FastMCP
 import logging
 import sys
 import os
+import certifi
+os.environ['SSL_CERT_FILE'] = certifi.where()
+
 from dotenv import load_dotenv
 from pinecone import Pinecone, ServerlessSpec
 from llama_index.core import VectorStoreIndex
