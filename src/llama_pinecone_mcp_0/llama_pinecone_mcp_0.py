@@ -104,10 +104,7 @@ class Operator(str, Enum):
 class FilterConfig(BaseModel):
     key: str = Field(..., description="The metadata field name to filter on")
     value: Any = Field(..., description="The value to compare against")
-    operator: Operator = Field(
-        default="==",
-        description="The operator to use for comparison"
-    )
+    operator: Operator = Field(..., description="The operator to use for comparison")
     model_config = {"arbitrary_types_allowed": True}
 
 # Pydantic model for all filters
@@ -134,7 +131,7 @@ def create_metadata_filters(filters_config: FiltersConfig) -> MetadataFilters:
     return MetadataFilters(filters=filters)
 
 @mcp.tool()
-def parse_document(url: str, metadata: Schema, id: Optional[str] = None) -> str:
+def parse_document(url: str, metadata: Schema, id: str) -> str:
     """Parse a list of URLs and return the parsed result."""
     document = parser.load_data(url)
     doc_id = id if id is not None else str(uuid.uuid4())
@@ -149,7 +146,7 @@ def parse_document(url: str, metadata: Schema, id: Optional[str] = None) -> str:
 #     return parser.load_data(urls)
 
 @mcp.tool()
-def insert_document(url: str, metadata: Schema, id: Optional[str] = None) -> str:
+def insert_document(url: str, metadata: Schema, id: str) -> str:
     """Upsert a document into the Pinecone index."""
     document = parse_document(url, metadata, id)
     nodes = pipeline.run(documents=document)
