@@ -6,7 +6,13 @@ from dotenv import load_dotenv
 from pinecone import Pinecone, ServerlessSpec
 from llama_index.core import VectorStoreIndex
 from llama_index.vector_stores.pinecone import PineconeVectorStore
-from llama_index.core import StorageContext
+from llama_index.core.ingestion import IngestionPipeline
+
+from llama_index_cloud_sql_pg import PostgresEngine
+from llama_index_cloud_sql_pg import PostgresDocumentStore
+
+# from llama_index.core import StorageContext
+from llama_index.core.schema import NodeRelationship
 from llama_parse import LlamaParse
 from typing import List, Any, Optional
 import uuid
@@ -27,10 +33,15 @@ mcp = FastMCP("Pinecone")
 pc = Pinecone(api_key=PINECONE_API_KEY)
 pinecone_index = pc.Index("quickstart")
 
+# laod the index
+vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
+index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
+
 parser = LlamaParse(
     api_key=os.environ.get("LLAMA_CLOUD_API_KEY"),  # get API key from environment variables
     result_type="markdown",  # "markdown" and "text" are available
     verbose=True,
+    split_by_page=False,
 )
 
 class Schema(BaseModel):
@@ -41,7 +52,6 @@ class Schema(BaseModel):
     tag: list = Field(description = 'list of tags of the document e.g. ["cannabis"]')
     class Config:
         extra = "allow"
-
 
 # Create an enum for the allowed operator strings
 class Operator(str, Enum):
@@ -80,10 +90,8 @@ class FiltersConfig(BaseModel):
 @mcp.tool()
 def create_metadata_filters(filters_config: FiltersConfig) -> MetadataFilters:
     """Create a MetadataFilters object based on a filter configuration."""
-    
     # Get the filter configs from the FiltersConfig object
     filter_configs = filters_config.filters
-    
     # Create the MetadataFilter objects
     filters = [
         MetadataFilter(
@@ -98,12 +106,12 @@ def create_metadata_filters(filters_config: FiltersConfig) -> MetadataFilters:
 @mcp.tool()
 def parse_document(url: str, metadata: Schema, id: Optional[str] = None) -> str:
     """Parse a list of URLs and return the parsed result."""
-    documents = parser.load_data(url)
-    doc_id = id if id is not None else str(uuid.uuid4())
-    for document in documents:
-        document.metadata = metadata.model_dump()
-        document.id_ = doc_id
-    return documents
+    document = parser.load_data(url)
+    # doc_id = id if id is not None else str(uuid.uuid4())
+    for doc in document:
+        doc.metadata = metadata.model_dump()
+        # doc.id_ = doc_id
+    return document
 
 # @mcp.tool()
 # def parse_documents(urls: list[str]) -> str:
@@ -111,13 +119,14 @@ def parse_document(url: str, metadata: Schema, id: Optional[str] = None) -> str:
 #     return parser.load_data(urls)
 
 @mcp.tool()
-def upsert_document(url: str, metadata: Schema, id: Optional[str] = None) -> str:
+def insert_document(url: str, metadata: Schema, id: Optional[str] = None) -> str:
     """Upsert a document into the Pinecone index."""
-    documents = parse_document(url, metadata, id)
-    vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
-    storage_context = StorageContext.from_defaults(vector_store=vector_store)
-    VectorStoreIndex.from_documents(documents, storage_context=storage_context)
-    return "Documents upserted successfully"
+    document = parse_document(url, metadata, id)
+    # vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
+    # storage_context = StorageContext.from_defaults(vector_store=vector_store)
+    # VectorStoreIndex.from_documents(documents, storage_context=storage_context)
+    index.insert(document)
+    return "Document inserted successfully"
 
 @mcp.tool()
 def query(query: str, filters_config: FiltersConfig) -> str:
