@@ -2,6 +2,8 @@ from fastmcp import FastMCP
 import logging
 import sys
 import os
+
+# needed for postgres engine
 import certifi
 os.environ['SSL_CERT_FILE'] = certifi.where()
 
@@ -11,11 +13,9 @@ from llama_index.core import VectorStoreIndex
 from llama_index.vector_stores.pinecone import PineconeVectorStore
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
-
 from llama_index_cloud_sql_pg import PostgresEngine
 from llama_index_cloud_sql_pg import PostgresDocumentStore
 
-# from llama_index.core import StorageContext
 from llama_index.core.schema import NodeRelationship
 from llama_parse import LlamaParse
 from typing import List, Any, Optional
@@ -54,7 +54,6 @@ engine = asyncio.run(PostgresEngine.afrom_instance(
 doc_store = asyncio.run(PostgresDocumentStore.create(
     engine=engine,
     table_name="document_store",
-    # schema_name=SCHEMA_NAME
 ))
 
 pipeline = IngestionPipeline(
@@ -140,10 +139,6 @@ def parse_document(url: str, metadata: Schema, id: str) -> str:
         doc.id_ = doc_id
     return document
 
-# @mcp.tool()
-# def parse_documents(urls: list[str]) -> str:
-#     """Parse a list of URLs and return the parsed result."""
-#     return parser.load_data(urls)
 
 @mcp.tool()
 def insert_document(url: str, metadata: Schema, id: str) -> str:
@@ -151,24 +146,17 @@ def insert_document(url: str, metadata: Schema, id: str) -> str:
     document = parse_document(url, metadata, id)
     nodes = pipeline.run(documents=document)
     index.insert_nodes(nodes)
-    # vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
-    # storage_context = StorageContext.from_defaults(vector_store=vector_store)
-    # VectorStoreIndex.from_documents(documents, storage_context=storage_context)
     return f"Ingested {len(nodes)} Nodes"
 
 @mcp.tool()
 def query(query: str, filters_config: FiltersConfig) -> str:
     """Query the Pinecone index and return the results."""
     filters = create_metadata_filters(filters_config)
-    # vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
-    # index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
     query_engine = index.as_query_engine(filters=filters)
     return query_engine.query(query)
 
 @mcp.tool()
 def retrieve(query: str, filters_config: FiltersConfig, top_k: int) -> dict:
-    # vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
-    # index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
     filters = create_metadata_filters(filters_config)
     retriever = index.as_retriever(filters=filters, similarity_top_k=top_k)
     retrieved = retriever.retrieve(query)
