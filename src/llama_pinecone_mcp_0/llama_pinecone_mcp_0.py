@@ -198,3 +198,8 @@ def get_document(id: str) -> dict:
     }
     return results
 
+@mcp.tool()
+def delete_document(id: str) -> str:
+    doc_store.delete_document(doc_id = id)
+    index.delete_ref_doc(ref_doc_id = id)
+    return f"Deleted document {id}"
