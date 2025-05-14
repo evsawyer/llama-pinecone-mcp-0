@@ -24,6 +24,7 @@ from llama_index.core.vector_stores import (
     MetadataFilters,
     FilterOperator,
 )
+import asyncio
 load_dotenv()
 
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
@@ -37,7 +38,7 @@ pinecone_index = pc.Index("quickstart")
 # laod the index
 vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='mcp-test-2025-05-14')
 
-engine = PostgresEngine.from_instance(
+engine = asyncio.run(PostgresEngine.afrom_instance(
     project_id="knowledge-base-458316",
     region="us-central1",
     instance="llamaindex-docstore",
@@ -45,13 +46,13 @@ engine = PostgresEngine.from_instance(
     user="postgres",
     password="llamadocpass",
     ip_type="public",
-)
+))
 
-doc_store = PostgresDocumentStore.create(
+doc_store = asyncio.run(PostgresDocumentStore.create(
     engine=engine,
     table_name="document_store",
     # schema_name=SCHEMA_NAME
-)
+))
 
 pipeline = IngestionPipeline(
     transformations=[
