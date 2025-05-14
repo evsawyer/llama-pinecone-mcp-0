@@ -137,10 +137,10 @@ def create_metadata_filters(filters_config: FiltersConfig) -> MetadataFilters:
 def parse_document(url: str, metadata: Schema, id: Optional[str] = None) -> str:
     """Parse a list of URLs and return the parsed result."""
     document = parser.load_data(url)
-    # doc_id = id if id is not None else str(uuid.uuid4())
+    doc_id = id if id is not None else str(uuid.uuid4())
     for doc in document:
         doc.metadata = metadata.model_dump()
-        # doc.id_ = doc_id
+        doc.id_ = doc_id
     return document
 
 # @mcp.tool()
