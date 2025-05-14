@@ -7,6 +7,7 @@ from pinecone import Pinecone, ServerlessSpec
 from llama_index.core import VectorStoreIndex
 from llama_index.vector_stores.pinecone import PineconeVectorStore
 from llama_index.core.ingestion import IngestionPipeline
+from llama_index.core.node_parser import SentenceSplitter
 
 from llama_index_cloud_sql_pg import PostgresEngine
 from llama_index_cloud_sql_pg import PostgresDocumentStore
@@ -35,7 +36,32 @@ pinecone_index = pc.Index("quickstart")
 
 # laod the index
 vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
-index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
+
+engine = PostgresEngine.from_instance(
+    project_id="knowledge-base-458316",
+    region="us-central1",
+    instance="llamaindex-docstore",
+    database="docstore",
+    user="postgres",
+    password="llamadocpass",
+    ip_type="public",
+)
+
+doc_store = PostgresDocumentStore.create(
+    engine=engine,
+    table_name="document_store",
+    # schema_name=SCHEMA_NAME
+)
+
+pipeline = IngestionPipeline(
+    transformations=[
+        SentenceSplitter(chunk_size=25, chunk_overlap=0),
+    ],
+    docstore=doc_store,
+    vector_store=vector_store,
+)
+
+index = VectorStoreIndex.from_vector_store(pipeline.vector_store)
 
 parser = LlamaParse(
     api_key=os.environ.get("LLAMA_CLOUD_API_KEY"),  # get API key from environment variables
@@ -150,11 +176,16 @@ def retrieve(query: str, filters_config: FiltersConfig, top_k: int) -> str:
         score = vector.score
         metadata = vector.metadata
         text = vector.text
+        parent_doc_id = vector.node.relationships.get(NodeRelationship.SOURCE)
         results[f"result {i+1}"] = {
             "id": id,
             "score": score,
             "metadata": metadata,
-            "text": text
+            "text": text,
+            "parent_doc_id": parent_doc_id
         }
     return results
+
+@mcp.tool()
+def get_document(id: str) -> str:
 
