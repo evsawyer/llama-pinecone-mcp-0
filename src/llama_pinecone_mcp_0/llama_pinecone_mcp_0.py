@@ -35,7 +35,7 @@ pc = Pinecone(api_key=PINECONE_API_KEY)
 pinecone_index = pc.Index("quickstart")
 
 # laod the index
-vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
+vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='mcp-test-2025-05-14')
 
 engine = PostgresEngine.from_instance(
     project_id="knowledge-base-458316",
