@@ -59,7 +59,7 @@ doc_store = asyncio.run(PostgresDocumentStore.create(
 
 pipeline = IngestionPipeline(
     transformations=[
-        SentenceSplitter(chunk_size=25, chunk_overlap=0),
+        SentenceSplitter(),
     ],
     docstore=doc_store,
     vector_store=vector_store,
