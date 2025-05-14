@@ -148,25 +148,27 @@ def parse_document(url: str, metadata: Schema, id: Optional[str] = None) -> str:
 def insert_document(url: str, metadata: Schema, id: Optional[str] = None) -> str:
     """Upsert a document into the Pinecone index."""
     document = parse_document(url, metadata, id)
+    nodes = pipeline.run(documents=document)
+    index.insert_nodes(nodes)
     # vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
     # storage_context = StorageContext.from_defaults(vector_store=vector_store)
     # VectorStoreIndex.from_documents(documents, storage_context=storage_context)
     index.insert(document)
-    return "Document inserted successfully"
+    return f"Ingested {len(nodes)} Nodes"
 
 @mcp.tool()
 def query(query: str, filters_config: FiltersConfig) -> str:
     """Query the Pinecone index and return the results."""
     filters = create_metadata_filters(filters_config)
-    vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
-    index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
+    # vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
+    # index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
     query_engine = index.as_query_engine(filters=filters)
     return query_engine.query(query)
 
 @mcp.tool()
-def retrieve(query: str, filters_config: FiltersConfig, top_k: int) -> str:
-    vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
-    index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
+def retrieve(query: str, filters_config: FiltersConfig, top_k: int) -> dict:
+    # vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
+    # index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
     filters = create_metadata_filters(filters_config)
     retriever = index.as_retriever(filters=filters, similarity_top_k=top_k)
     retrieved = retriever.retrieve(query)
@@ -187,5 +189,12 @@ def retrieve(query: str, filters_config: FiltersConfig, top_k: int) -> str:
     return results
 
 @mcp.tool()
-def get_document(id: str) -> str:
+def get_document(id: str) -> dict:
+    document = doc_store.get_document(doc_id = id)
+    results = {
+        "id": document.id_,
+        "metadata": document.metadata,
+        "text": document.text
+    }
+    return results
 
