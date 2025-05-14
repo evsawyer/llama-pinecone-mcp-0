@@ -153,7 +153,6 @@ def insert_document(url: str, metadata: Schema, id: Optional[str] = None) -> str
     # vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace='cloudinary')
     # storage_context = StorageContext.from_defaults(vector_store=vector_store)
     # VectorStoreIndex.from_documents(documents, storage_context=storage_context)
-    index.insert(document)
     return f"Ingested {len(nodes)} Nodes"
 
 @mcp.tool()
